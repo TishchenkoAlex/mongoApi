@@ -17,12 +17,12 @@ interface Document {
   parent: string;
   company: string;
   user: string;
-  json: { [x: string]: any };
+  doc: { [x: string]: any };
 }
 
 function flatDocument(doc: Document): { [x: string]: any } {
   const { id, type, date, code, description, posted, deleted, isfolder, timestamp, parent, company, user } = doc;
-  return { ...doc.json, id, type, date, code, description, posted, deleted, isfolder, timestamp, parent, company, user };
+  return { ...doc.doc, id, type, date, code, description, posted, deleted, isfolder, timestamp, parent, company, user };
 }
 
 async function get(conn: SQLClient, id: string) {
@@ -42,7 +42,7 @@ router.get('/:type/:id', async (req: SessionRequest, res, next) => {
 
 async function post(conn: SQLClient, type: string, json: { [x: string]: any }) {
   const query = `
-    INSERT INTO Documents(id, type, date, code, description, posted, deleted, isfolder, parent, company, user, json)
+    INSERT INTO Documents(id, type, date, code, description, posted, deleted, isfolder, parent, company, user, doc)
     OUTPUT INSERTED.*
     VALUES(@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8,@p9,@p10,@p11,JSON_QUERY(@p12));
   `;
@@ -64,7 +64,7 @@ router.post('/:type', async (req: SessionRequest, res, next) => {
 async function patch(conn: SQLClient, id: string, json: { [x: string]: any }) {
   const query = `
     UPDATE Documents
-    SET json = JSON_QUERY(@p2)
+    SET doc = JSON_QUERY(@p2)
     OUTPUT INSERTED.*
     WHERE id = @p1;
   `;
@@ -85,7 +85,7 @@ async function del(conn: SQLClient, id: string) {
   const query = `
     UPDATE Documents SET
       deleted = 1,
-      json = JSON_MODIFY(json, '$.deleted', 1)
+      doc = JSON_MODIFY(doc, '$.deleted', 1)
     OUTPUT INSERTED.*
     WHERE id = @p1;
   `;
