@@ -4,7 +4,8 @@ import { DEFAULT_POOL } from '../sql/DEFAULT_POOL';
 import { dateReviverUTC } from '../fuctions/dateReviver';
 
 export async function SqlToMongoDocuments() {
-  const uri = 'mongodb+srv://jetti:lVcPD0ChkcKaqtNZ@cluster0-yzx4b.gcp.mongodb.net/test?retryWrites=true&w=majority';
+  return;
+  const uri = process.env.MONGODB!;
   const mongoClient = await new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true }).connect();
   const collectionDocuments = mongoClient.db('x100').collection('Documents');
   await collectionDocuments.deleteMany({});

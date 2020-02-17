@@ -44,5 +44,5 @@ HTTP.listen(port, () => console.log(`API running on port:${port}`));
 
 
 (async () => {
-  SqlToMongoDocuments();
+  await SqlToMongoDocuments();
 })();
