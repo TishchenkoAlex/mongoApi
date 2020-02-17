@@ -1,20 +1,31 @@
 import * as express from 'express';
-import { MSSQL } from '../mssql';
-import { SDB } from './middleware/db-sessions';
+import { DatabaseSession } from '../sql/database-session';
+import { SessionRequest } from './middleware/set-darabase-session';
 
 export const router = express.Router();
 
 interface Document {
-  id: string,
-  type: string,
-  json: { [x: string]: any }
+  id: string;
+  type: string;
+  date: string;
+  code: string;
+  description: string;
+  posted: boolean;
+  deleted: boolean;
+  isfolder: boolean;
+  timestamp: string;
+  parent: string;
+  company: string;
+  user: string;
+  json: { [x: string]: any };
 }
 
 function flatDocument(doc: Document): { [x: string]: any } {
-  return { ...doc.json, id: doc.id, type: doc.type }
+  const { id, type, date, code, description, posted, deleted, isfolder, timestamp, parent, company, user } = doc;
+  return { ...doc.json, id, type, date, code, description, posted, deleted, isfolder, timestamp, parent, company, user };
 }
 
-async function get(conn: MSSQL, id: string) {
+async function get(conn: DatabaseSession, id: string) {
   const query = `SELECT * FROM Documents WHERE id = @p1`;
   const rawDocument = await conn.oneOrNone<Document>(query, [id]);
   if (!rawDocument) return null;
@@ -22,46 +33,39 @@ async function get(conn: MSSQL, id: string) {
   return result;
 }
 
-router.get('/:id', async (req, res, next) => {
+router.get('/:type/:id', async (req: SessionRequest, res, next) => {
   try {
-    const conn = SDB(req);
-    const result = await get(conn, req.params.id);
+    const result = await get(req.db, req.params.id);
     res.json(result);
   } catch (err) { next(err); }
 });
 
-router.get('/:type/:id', async (req, res, next) => {
-  try {
-    const conn = SDB(req);
-    const result = await get(conn, req.params.id);
-    res.json(result);
-  } catch (err) { next(err); }
-});
-
-async function post(conn: MSSQL, type: string, json: string) {
+async function post(conn: DatabaseSession, type: string, json: { [x: string]: any }) {
   const query = `
-    INSERT INTO Documents(type, json) 
-    OUTPUT INSERTED.* 
-    VALUES(@p1, JSON_QUERY(@p2));
+    INSERT INTO Documents(id, type, date, code, description, posted, deleted, isfolder, parent, company, user, json)
+    OUTPUT INSERTED.*
+    VALUES(@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8,@p9,@p10,@p11,JSON_QUERY(@p12));
   `;
-  const rawDocument = (await conn.oneOrNone<Document>(query, [type, JSON.stringify(json)]))!;
+  const { id, date, code, description, posted, deleted, isfolder, parent, company, user } = json;
+  const rawDocument = (await conn.oneOrNone<Document>(query, [
+    id, type, date, code, description, posted, deleted, isfolder, parent, company, user, JSON.stringify(json)]))!;
   const result = flatDocument(rawDocument);
   return result;
 }
 
-router.post('/:type', async (req, res, next) => {
+router.post('/:type', async (req: SessionRequest, res, next) => {
   try {
-    const conn = SDB(req);
-    const result = await post(conn, req.params.type, req.body);
+    const result = await post(req.db, req.params.type, req.body);
     res.json(result);
   } catch (err) { next(err); }
 });
 
-async function patch(conn: MSSQL, id: string, json: string) {
+
+async function patch(conn: DatabaseSession, id: string, json: { [x: string]: any }) {
   const query = `
     UPDATE Documents
     SET json = JSON_QUERY(@p2)
-    OUTPUT INSERTED.* 
+    OUTPUT INSERTED.*
     WHERE id = @p1;
   `;
   const rawDocument = (await conn.oneOrNone<Document>(query, [id, JSON.stringify(json)]));
@@ -70,10 +74,30 @@ async function patch(conn: MSSQL, id: string, json: string) {
   return result;
 }
 
-router.patch('/:type/:id', async (req, res, next) => {
+router.patch('/:type/:id', async (req: SessionRequest, res, next) => {
   try {
-    const conn = SDB(req);
-    const result = await patch(conn, req.params.id, req.body);
+    const result = await patch(req.db, req.params.id, req.body);
+    res.json(result);
+  } catch (err) { next(err); }
+});
+
+async function del(conn: DatabaseSession, id: string) {
+  const query = `
+    UPDATE Documents SET
+      deleted = 1,
+      json = JSON_MODIFY(json, '$.deleted', 1)
+    OUTPUT INSERTED.*
+    WHERE id = @p1;
+  `;
+  const rawDocument = (await conn.oneOrNone<Document>(query, [id]));
+  if (!rawDocument) return null;
+  const result = flatDocument(rawDocument);
+  return result;
+}
+
+router.delete('/:type/:id', async (req: SessionRequest, res, next) => {
+  try {
+    const result = await del(req.db, req.params.id);
     res.json(result);
   } catch (err) { next(err); }
 });

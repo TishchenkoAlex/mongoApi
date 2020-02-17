@@ -12,11 +12,11 @@ router.post('/login', async (req, res, next) => {
     instance.defaults.headers.common['Authorization'] = `Bearer ${req.body.token}`;
     const me = (await instance.get('/v1.0/me/')).data;
 
-    let photoArraybuffer; let photo;
+    let photo;
     try {
-      photoArraybuffer = (await instance.get('/v1.0/me/photos/48x48/$value', { responseType: 'arraybuffer' })).data;
+      const photoArraybuffer = (await instance.get('/v1.0/me/photos/48x48/$value', { responseType: 'arraybuffer' })).data;
       photo = Buffer.from(photoArraybuffer, 'binary').toString('base64');
-    } catch {};
+    } catch { }
 
     const payload: IJWTPayload = {
       email: me.userPrincipalName,
@@ -27,6 +27,24 @@ router.post('/login', async (req, res, next) => {
 
     const token = jwt.sign(payload, JTW_KEY, { expiresIn: '72h' });
 
-    return res.json({ account: payload, token, photo });
+    return res.json({ account: { ...payload, photo }, token });
+  } catch (err) { next(err); }
+});
+
+
+router.post('/token', async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    if (password !== process.env.EXCHANGE_ACCESS_KEY)
+      return res.status(401).json({ message: 'Auth failed: wrong API key' });
+
+    const payload: IJWTPayload = {
+      email: 'apiService@x100-group.com',
+      description: 'apiService account',
+      isAdmin: true,
+      roles: [],
+    };
+    const token = jwt.sign(payload, JTW_KEY, { expiresIn: '24h' });
+    return res.json({ account: payload, token });
   } catch (err) { next(err); }
 });

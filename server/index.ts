@@ -5,10 +5,12 @@ import * as express from 'express';
 import { NextFunction, Request, Response } from 'express';
 import * as httpServer from 'http';
 import * as path from 'path';
-import { authHTTP } from './routes/middleware/check-auth';
-import { jettiDB } from './routes/middleware/db-sessions';
+import { checkAuth } from './routes/middleware/check-auth';
 import { router as auth } from './routes/auth';
 import { router as document } from './routes/document';
+import { setDatabaseSession } from './routes/middleware/set-darabase-session';
+import { SqlToMongoDocuments } from './exchange/sql-to-mongo-documents';
+
 
 const root = './';
 const app = express();
@@ -20,8 +22,8 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: false }));
 app.use(express.static(path.join(root, 'dist')));
 
 const api = `/api/v1.0/`;
-app.use(api + 'document', jettiDB, document);
-app.use('/auth', jettiDB, auth);
+app.use(api + 'document', checkAuth, setDatabaseSession, document);
+app.use('/auth', setDatabaseSession, auth);
 
 app.get('*', (req: Request, res: Response) => {
   res.status(200);
@@ -39,3 +41,8 @@ export const HTTP = httpServer.createServer(app);
 
 const port = (process.env.PORT) || '3000';
 HTTP.listen(port, () => console.log(`API running on port:${port}`));
+
+
+(async () => {
+  SqlToMongoDocuments();
+})();
