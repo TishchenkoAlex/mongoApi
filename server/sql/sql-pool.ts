@@ -1,10 +1,10 @@
 import { Connection, ConnectionError } from 'tedious';
 import { Pool } from 'tarn';
-import { ConnectionConfigAndPool } from './interfaces';
+import { SQLConnectionConfig } from './interfaces';
 
-export class DatabasePoll {
+export class SQLPool {
 
-  constructor(public config: ConnectionConfigAndPool) { }
+  constructor(public config: SQLConnectionConfig) { }
 
   pool = new Pool<Connection>({
     create: () => {

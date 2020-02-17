@@ -1,10 +1,10 @@
 import { Connection, Request, ColumnValue, RequestError, ISOLATION_LEVEL, TYPES } from 'tedious';
 import { dateReviverUTC } from '../fuctions/dateReviver';
-import { DatabasePoll } from './database-pool';
+import { SQLPool } from './sql-pool';
 
-export class DatabaseSession {
+export class SQLClient {
 
-  constructor(private sqlPool: DatabasePoll, public user?: { [key: string]: any }, private connection?: Connection) {
+  constructor(private sqlPool: SQLPool, public user?: { [key: string]: any }, private connection?: Connection) {
     this.user = { email: '', isAdmin: false, env: {}, description: '', roles: [], ...user };
   }
 
@@ -103,12 +103,12 @@ export class DatabaseSession {
     });
   }
 
-  async tx(func: (tx: DatabaseSession, name?: string, isolationLevel?: ISOLATION_LEVEL) => Promise<void>,
+  async tx(func: (tx: SQLClient, name?: string, isolationLevel?: ISOLATION_LEVEL) => Promise<void>,
     name?: string, isolationLevel = ISOLATION_LEVEL.READ_COMMITTED) {
     const connection = this.connection ? this.connection : await this.sqlPool.pool.acquire().promise;
     await this.beginTransaction(connection, name, isolationLevel);
     try {
-      await func(new DatabaseSession(this.sqlPool, this.user, connection), name, isolationLevel);
+      await func(new SQLClient(this.sqlPool, this.user, connection), name, isolationLevel);
       await this.commitTransaction(connection);
     } catch (error) {
       try { await this.rollbackTransaction(connection); } catch { }

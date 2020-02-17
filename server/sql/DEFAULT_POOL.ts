@@ -1,10 +1,10 @@
 import { config as dotenv } from 'dotenv';
 dotenv();
 
-import { ConnectionConfigAndPool } from './interfaces';
-import { DatabasePoll } from './database-pool';
+import { SQLConnectionConfig } from './interfaces';
+import { SQLPool } from './sql-pool';
 
-const sqlConfigDefault: ConnectionConfigAndPool = {
+const sqlConfigDefault: SQLConnectionConfig = {
   server: process.env.DB_HOST!,
   authentication: {
     type: 'default',
@@ -27,4 +27,4 @@ const sqlConfigDefault: ConnectionConfigAndPool = {
   }
 };
 
-export const DEFAULT_POOL = new DatabasePoll(sqlConfigDefault);
+export const DEFAULT_POOL = new SQLPool(sqlConfigDefault);

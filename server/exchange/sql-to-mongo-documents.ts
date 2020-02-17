@@ -1,5 +1,5 @@
 import { MongoClient } from 'mongodb';
-import { DatabaseSession } from '../sql/database-session';
+import { SQLClient } from '../sql/sql-client';
 import { DEFAULT_POOL } from '../sql/DEFAULT_POOL';
 import { dateReviverUTC } from '../fuctions/dateReviver';
 
@@ -9,7 +9,7 @@ export async function SqlToMongoDocuments() {
   const collectionDocuments = mongoClient.db('x100').collection('Documents');
   await collectionDocuments.deleteMany({});
 
-  const SQLSession = new DatabaseSession(DEFAULT_POOL);
+  const SQLSession = new SQLClient(DEFAULT_POOL);
   const SQLRequest = await SQLSession.manyOrNoneStream(`select id as _id, * FROM [Documents]`);
 
   let batch: any[] = [];

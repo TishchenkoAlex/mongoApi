@@ -1,3 +1,3 @@
 import { ConnectionConfig } from 'tedious';
 
-export type ConnectionConfigAndPool = ConnectionConfig & { pool: { min: number, max: number, idleTimeoutMillis: number } };
+export type SQLConnectionConfig = ConnectionConfig & { pool: { min: number, max: number, idleTimeoutMillis: number } };

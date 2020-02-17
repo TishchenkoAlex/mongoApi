@@ -1,5 +1,5 @@
 import * as express from 'express';
-import { DatabaseSession } from '../sql/database-session';
+import { SQLClient } from '../sql/sql-client';
 import { SessionRequest } from './middleware/set-darabase-session';
 
 export const router = express.Router();
@@ -25,7 +25,7 @@ function flatDocument(doc: Document): { [x: string]: any } {
   return { ...doc.json, id, type, date, code, description, posted, deleted, isfolder, timestamp, parent, company, user };
 }
 
-async function get(conn: DatabaseSession, id: string) {
+async function get(conn: SQLClient, id: string) {
   const query = `SELECT * FROM Documents WHERE id = @p1`;
   const rawDocument = await conn.oneOrNone<Document>(query, [id]);
   if (!rawDocument) return null;
@@ -40,7 +40,7 @@ router.get('/:type/:id', async (req: SessionRequest, res, next) => {
   } catch (err) { next(err); }
 });
 
-async function post(conn: DatabaseSession, type: string, json: { [x: string]: any }) {
+async function post(conn: SQLClient, type: string, json: { [x: string]: any }) {
   const query = `
     INSERT INTO Documents(id, type, date, code, description, posted, deleted, isfolder, parent, company, user, json)
     OUTPUT INSERTED.*
@@ -61,7 +61,7 @@ router.post('/:type', async (req: SessionRequest, res, next) => {
 });
 
 
-async function patch(conn: DatabaseSession, id: string, json: { [x: string]: any }) {
+async function patch(conn: SQLClient, id: string, json: { [x: string]: any }) {
   const query = `
     UPDATE Documents
     SET json = JSON_QUERY(@p2)
@@ -81,7 +81,7 @@ router.patch('/:type/:id', async (req: SessionRequest, res, next) => {
   } catch (err) { next(err); }
 });
 
-async function del(conn: DatabaseSession, id: string) {
+async function del(conn: SQLClient, id: string) {
   const query = `
     UPDATE Documents SET
       deleted = 1,
