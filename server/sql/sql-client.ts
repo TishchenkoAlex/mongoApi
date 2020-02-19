@@ -53,20 +53,17 @@ export class SQLClient {
     }));
   }
 
-  manyOrNoneStream(sql: string, params: any[] = []): Promise<Request> {
-    return (new Promise<Request>(async (resolve, reject) => {
-      try {
-        const connection = this.connection ? this.connection : await this.sqlPool.pool.acquire().promise;
-        const request: Request = new Request(this.prepareSession(sql), (error: RequestError, rowCount: number, rows: ColumnValue[][]) => {
-          if (error) return reject(error);
-        });
-        request.on('done', () => this.sqlPool.pool.release(connection));
-        this.setParams(params, request);
-        request.pause();
-        connection.execSql(request);
-        resolve(request);
-      } catch (error) { return reject(error); }
-    }));
+  async manyOrNoneStream(sql: string, params: any[] = [], onRow: Function, onDone: Function) {
+    try {
+      const connection = this.connection ? this.connection : await this.sqlPool.pool.acquire().promise;
+      const request: Request = new Request(this.prepareSession(sql), (error: RequestError, rowCount: number, rows: ColumnValue[][]) => {
+        if (error) throw new Error(error.message);
+      });
+      request.on('row', (row) => onRow(row, request));
+      request.on('done', (rowCount: number, more: boolean) => onDone(rowCount, more));
+      this.setParams(params, request);
+      connection.execSqlBatch(request);
+    } catch (error) { throw new Error(error); }
   }
 
   oneOrNone<T>(sql: string, params: any[] = []): Promise<T | null> {
