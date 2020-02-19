@@ -10,6 +10,7 @@ import { router as auth } from './routes/auth';
 import { router as document } from './routes/document';
 import { setDatabaseSession } from './routes/middleware/set-darabase-session';
 import { SqlToMongoDocuments } from './exchange/sql-to-mongo-documents';
+import { CatalogBank } from './exchange/Catalog.Bank';
 
 
 const root = './';
@@ -44,5 +45,6 @@ HTTP.listen(port, () => console.log(`API running on port:${port}`));
 
 
 (async () => {
-  await SqlToMongoDocuments();
+  // await SqlToMongoDocuments();
+  await CatalogBank();
 })();
